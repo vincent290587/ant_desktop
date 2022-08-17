@@ -1,0 +1,102 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"childIndexes" : 
+					[
+						1
+					],
+					"jsonFile" : "directory-.-Debug-d0094a50bb2071803777.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.7.2"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0
+					]
+				},
+				{
+					"build" : "ANT_LIB",
+					"jsonFile" : "directory-ANT_LIB-Debug-a00443db725e8fc55f65.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.7.2"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 1,
+					"source" : "ANT_LIB",
+					"targetIndexes" : 
+					[
+						1
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"childIndexes" : 
+					[
+						1
+					],
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "ANT_DLL",
+					"targetIndexes" : 
+					[
+						0
+					]
+				},
+				{
+					"directoryIndexes" : 
+					[
+						1
+					],
+					"name" : "ANT_LIB",
+					"parentIndex" : 0,
+					"targetIndexes" : 
+					[
+						1
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "ANT_DLL::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-ANT_DLL-Debug-222a41fd13f12d3fa7fc.json",
+					"name" : "ANT_DLL",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 1,
+					"id" : "ANT_LIB::@d8e56e0e7feb196e5bd8",
+					"jsonFile" : "target-ANT_LIB-Debug-0b8971d7d9fe99ca16fb.json",
+					"name" : "ANT_LIB",
+					"projectIndex" : 1
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "C:/Users/vgol/Documents/01_Firmware/xx_BlackOps/ant_test/ANT-SDK_PC.3.5/cmake-build-debug",
+		"source" : "C:/Users/vgol/Documents/01_Firmware/xx_BlackOps/ant_test/ANT-SDK_PC.3.5"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 3
+	}
+}
