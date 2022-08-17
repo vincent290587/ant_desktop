@@ -1,19 +1,25 @@
 
 #include <cassert>
+#include <fstream>
 #include "dsi_serial_generic.hpp"
 #include "ant_receive_ch.h"
+
+USHORT power1, power2;
 
 static void _pw1_callback(UCHAR *p_aucData) {
 
 	UCHAR ucPageNum = p_aucData[0];
 
-	printf("Dev 0 Page: %d received\n", ucPageNum);
+	//printf("Dev 0 Page: %d received\n", ucPageNum);
 
 	// Page specific data
 	switch(ucPageNum) // Removing the toggle bit
 	{
 		case 16:
-
+		{
+			power1 = p_aucData[6] + p_aucData[7]*0xFF;
+			printf("Dev 0 Page: power %u received\n", power1);
+		}
 			break;
 
 		default:
@@ -27,13 +33,16 @@ static void _pw2_callback(UCHAR *p_aucData) {
 
 	UCHAR ucPageNum = p_aucData[0];
 
-	printf("Dev 1 Page: %d received\n", ucPageNum);
+	//printf("Dev 1 Page: %d received\n", ucPageNum);
 
 	// Page specific data
 	switch(ucPageNum) // Removing the toggle bit
 	{
 		case 16:
-
+		{
+			power2 = p_aucData[6] + p_aucData[7]*0xFF;
+			printf("Dev 1 Page: power %u received\n", power2);
+		}
 			break;
 
 		default:
@@ -46,16 +55,35 @@ static void _pw2_callback(UCHAR *p_aucData) {
 #define PW_PERIOD_COUNTS 8182u
 #define PW_DEVICE_TYPE   0x0Bu
 
-static void Start();
 static void Loop();
 
 BOOL bMyDone = FALSE;
-DSISerialGeneric* pclSerialObject = nullptr;
-DSIFramerANT* pclMessageObject = nullptr;
+
+
+DSI_THREAD_RETURN _io_task(void *pvParameter_)
+{
+	std::ofstream fParameters;
+
+	fParameters.open("com.txt");
+
+	fParameters << "power1 - power2" << std::endl;
+
+	while (!bMyDone) {
+		DSIThread_Sleep(500);
+
+		fParameters << power1;
+		fParameters << " - ";
+		fParameters << power2 << std::endl;
+
+		fParameters.flush();
+
+	}
+
+	fParameters.close();
+	return NULL;
+}
 
 int main(int argc, char *argv[]) {
-
-	BOOL bStatus;
 
 	ANTrxService *pANTsrv = new ANTrxService();
 	assert(pANTsrv);
@@ -81,7 +109,11 @@ int main(int argc, char *argv[]) {
 	pANTsrv->AddSlave(sInit1, _pw1_callback);
 	pANTsrv->AddSlave(sInit2, _pw2_callback);
 
-	if(ret == 0 && pANTsrv->Init() ) { //  && pPWR2srv->Init(sInit2)
+	// Create message thread.
+	DSI_THREAD_ID uiDSIThread = DSIThread_CreateThread(_io_task, NULL);
+	assert(uiDSIThread);
+
+	if(ret == 0 && pANTsrv->Init() ) {
 
 		pANTsrv->Start();
 
@@ -89,8 +121,6 @@ int main(int argc, char *argv[]) {
 
 	} else {
 		delete pANTsrv;
-		delete pclSerialObject;
-		delete pclMessageObject;
 		ret--;
 	}
 
@@ -146,8 +176,6 @@ static void Loop()
 				{
 					// Quit
 					printf("Closing channels...\n");
-					pclMessageObject->CloseChannel(0, MESSAGE_TIMEOUT);
-					pclMessageObject->CloseChannel(1, MESSAGE_TIMEOUT);
 					bMyDone = TRUE;
 					break;
 				}
@@ -161,20 +189,20 @@ static void Loop()
 					USHORT usDeviceVID;
 					UCHAR aucDeviceDescription[USB_MAX_STRLEN];
 					UCHAR aucDeviceSerial[USB_MAX_STRLEN];
-					// Retrieve info
-					if(pclMessageObject->GetDeviceUSBVID(usDeviceVID))
-					{
-						printf("  VID: 0x%X\n", usDeviceVID);
-					}
-					if(pclMessageObject->GetDeviceUSBPID(usDevicePID))
-					{
-						printf("  PID: 0x%X\n", usDevicePID);
-					}
-					if(pclMessageObject->GetDeviceUSBInfo(pclSerialObject->GetDeviceNumber(), aucDeviceDescription, aucDeviceSerial, USB_MAX_STRLEN))
-					{
-						printf("  Product Description: %s\n", aucDeviceDescription);
-						printf("  Serial String: %s\n", aucDeviceSerial);
-					}
+//					// Retrieve info
+//					if(pclMessageObject->GetDeviceUSBVID(usDeviceVID))
+//					{
+//						printf("  VID: 0x%X\n", usDeviceVID);
+//					}
+//					if(pclMessageObject->GetDeviceUSBPID(usDevicePID))
+//					{
+//						printf("  PID: 0x%X\n", usDevicePID);
+//					}
+//					if(pclMessageObject->GetDeviceUSBInfo(pclSerialObject->GetDeviceNumber(), aucDeviceDescription, aucDeviceSerial, USB_MAX_STRLEN))
+//					{
+//						printf("  Product Description: %s\n", aucDeviceDescription);
+//						printf("  Serial String: %s\n", aucDeviceSerial);
+//					}
 					break;
 				}
 
@@ -186,13 +214,6 @@ static void Loop()
 			DSIThread_Sleep(0);
 		}
 	}
-
-	//Disconnecting from module
-	printf("Disconnecting module...\n");
-
-	pclSerialObject->Close();
-
-	printf("Closing the Receiver!\n");
 
 	return;
 }

@@ -18,6 +18,15 @@ ANTrxService::ANTrxService() {
 
 ANTrxService::~ANTrxService()
 {
+	for (auto slave : mDevices)
+	{
+		pclMessageObject->CloseChannel(slave.ucAntChannel, MESSAGE_TIMEOUT);
+	}
+
+	printf("Closing the Receiver!\n");
+
+	pclSerialObject->Close();
+
 	if(pclMessageObject)
 		delete pclMessageObject;
 
