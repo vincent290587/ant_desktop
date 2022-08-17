@@ -5,11 +5,12 @@
 #include "ant_receive_ch.h"
 
 ANTrxService::ANTrxService(DSISerialGeneric* serialObject,
+                           DSIFramerANT* messageObject,
 						   std::function<void(UCHAR *p_aucData)> callback
 						   ) {
 	ucChannelType = CHANNEL_TYPE_SLAVE; // always a slave
 	pclSerialObject = serialObject;
-	pclMessageObject = (DSIFramerANT*)NULL;
+	pclMessageObject = messageObject;
 	msg_callback = callback;
 	uiDSIThread = (DSI_THREAD_ID)NULL;
 	bMyDone = FALSE;
@@ -21,8 +22,6 @@ ANTrxService::ANTrxService(DSISerialGeneric* serialObject,
 
 ANTrxService::~ANTrxService()
 {
-	if(pclMessageObject)
-		delete pclMessageObject;
 
 }
 
@@ -102,13 +101,6 @@ BOOL ANTrxService::Init(sANTrxServiceInit sInit)
 		printf("Transmitter Device Number: %d\n", usDeviceNum);
 	}
 
-	// Network Number
-//	printf("Network number? (Press Enter for default: 0)\n"); fflush(stdout);
-//	char st3[1024];
-//	fgets(st3, sizeof(st3), stdin);
-	ucNetworkNum = 0;
-	printf("Network Number: %d\n", ucNetworkNum);
-
 	// Message Period
 //	int period_option;
 //	char st4[10];
@@ -142,50 +134,12 @@ BOOL ANTrxService::Init(sANTrxServiceInit sInit)
 	usMessagePeriod = sInit.usMessagePeriod;
 	printf("Message Period: %d (counts)\n", usMessagePeriod);
 
-	ucDeviceType - sInit.ucDeviceType;
+	ucDeviceType = sInit.ucDeviceType;
 	printf("Device type: %d\n", ucDeviceType);
-
-	// Initialize Serial object.
-	// The device number depends on how many USB sticks have been
-	// plugged into the PC. The first USB stick plugged will be 0
-	// the next 1 and so on.
-	//
-	// The Baud Rate depends on the ANT solution being used. AP1
-	// is 50000, all others are 57600
-	bStatus = pclSerialObject->Init(USER_BAUDRATE, ucDeviceNumber_);
-	assert(bStatus);
-
-	// Create Framer object.
-	pclMessageObject = new DSIFramerANT(pclSerialObject);
-	assert(pclMessageObject);
-
-	// Initialize Framer object.
-	bStatus = pclMessageObject->Init();
-	assert(bStatus);
-
-	// Let Serial know about Framer.
-	pclSerialObject->SetCallback(pclMessageObject);
-
-	// Open Serial.
-	bStatus = pclSerialObject->Open();
-
-	// If the Open function failed, most likely the device
-	// we are trying to access does not exist, or it is connected
-	// to another program
-	if(!bStatus)
-	{
-		printf("Failed to connect to device at USB port %d\n", ucDeviceNumber_);
-//		printf("Press any key to continue.\n"); fflush(stdout);
-//		char st[1024];
-//		fgets(st, sizeof(st), stdin);
-		return FALSE;
-	}
 
 	// Create message thread.
 	uiDSIThread = DSIThread_CreateThread(&ANTrxService::RunMessageThread, this);
 	assert(uiDSIThread);
-
-	printf("USB device initialisation was successful!\n"); fflush(stdout);
 
 	return TRUE;
 }
@@ -212,157 +166,10 @@ void ANTrxService::Close()
 	DSIThread_MutexDestroy(&mutexTestDone);
 	DSIThread_CondDestroy(&condTestDone);
 
-	//Close all stuff
-	if(pclSerialObject)
-		pclSerialObject->Close();
-
 #if defined(DEBUG_FILE)
 	DSIDebug::Close();
 #endif
 
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// Start
-//
-////////////////////////////////////////////////////////////////////////////////
-void ANTrxService::Start()
-{
-	BOOL bStatus;
-
-	// Start ANT channel setup
-	bStatus = InitANT();
-	if (bStatus)
-	{
-		printf("ANT initialisation was successful!\n"); fflush(stdout);
-
-		this->PrintMenu();
-
-		while(!bMyDone)
-		{
-			UCHAR ucChar;
-			char st[1024];
-			fgets(st, sizeof(st), stdin);
-			sscanf(st, "%c", &ucChar);
-
-			switch(ucChar)
-			{
-				case 'Q':
-				case 'q':
-				{
-					// Quit
-					printf("Closing channel...\n");
-					bBroadcasting = FALSE;
-					pclMessageObject->CloseChannel(ucAntChannel, MESSAGE_TIMEOUT);
-					break;
-				}
-
-				case 'r':
-				case 'R':
-				{
-					// Reset the system and start over the test
-					bStatus = InitANT();
-					break;
-				}
-				case 'S':
-				case 's':
-				{
-					// Request channel status
-					ANT_MESSAGE_ITEM stResponse;
-					pclMessageObject->SendRequest(MESG_CHANNEL_STATUS_ID, ucAntChannel, &stResponse, 0);
-					break;
-				}
-				case 'I':
-				case 'i':
-				{
-					// Request channel ID
-					ANT_MESSAGE_ITEM stResponse;
-					pclMessageObject->SendRequest(MESG_CHANNEL_ID_ID, ucAntChannel, &stResponse, 0);
-					break;
-				}
-				case 'd':
-				case 'D':
-				{
-					// Toggle display of data messages
-					bDisplay = !bDisplay;
-					break;
-				}
-				case 'p':
-				case 'P':
-				{
-					// Toggle raw-processed data
-					bProcessedData = !bProcessedData;
-					break;
-				}
-				case 'u':
-				case 'U':
-				{
-					// Print out information about the device we are connected to
-					printf("USB Device Description\n");
-					USHORT usDevicePID;
-					USHORT usDeviceVID;
-					UCHAR aucDeviceDescription[USB_MAX_STRLEN];
-					UCHAR aucDeviceSerial[USB_MAX_STRLEN];
-					// Retrieve info
-					if(pclMessageObject->GetDeviceUSBVID(usDeviceVID))
-					{
-						printf("  VID: 0x%X\n", usDeviceVID);
-					}
-					if(pclMessageObject->GetDeviceUSBPID(usDevicePID))
-					{
-						printf("  PID: 0x%X\n", usDevicePID);
-					}
-					if(pclMessageObject->GetDeviceUSBInfo(pclSerialObject->GetDeviceNumber(), aucDeviceDescription, aucDeviceSerial, USB_MAX_STRLEN))
-					{
-						printf("  Product Description: %s\n", aucDeviceDescription);
-						printf("  Serial String: %s\n", aucDeviceSerial);
-					}
-					break;
-				}
-
-				default:
-				{
-					break;
-				}
-			}
-			DSIThread_Sleep(0);
-		}
-	}
-	else
-	{
-		printf("ANT initialisation failed!\n"); fflush(stdout);
-	}
-	//Disconnecting from module
-	printf("Disconnecting module...\n");
-	this->Close();
-
-	printf("Closing the Heart Rate Monitor Receiver!\n");
-
-	return;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// InitANT
-//
-// Resets the system and starts the test
-//
-////////////////////////////////////////////////////////////////////////////////
-BOOL ANTrxService::InitANT(void)
-{
-	BOOL bStatus; // ANT initialisation status
-
-	// Reset system
-	printf("Resetting module...\n");
-	bStatus = pclMessageObject->ResetSystem();
-	DSIThread_Sleep(1000);
-
-	// Start the test by setting network key
-	printf("Setting network key...\n");
-	UCHAR ucNetKey[8] = USER_NETWORK_KEY;
-
-	bStatus &= pclMessageObject->SetNetworkKey(ucNetworkNum, ucNetKey, MESSAGE_TIMEOUT);
-
-	return bStatus;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -407,7 +214,9 @@ void ANTrxService::MessageThread()
 
 			if(usSize != DSI_FRAMER_ERROR && usSize != DSI_FRAMER_TIMEDOUT && usSize != 0)
 			{
-				ProcessMessage(stMessage, usSize);
+				if (1 || stMessage.aucData[0] == ucAntChannel) {
+					ProcessMessage(stMessage, usSize);
+				}
 			}
 		}
 	}
@@ -435,7 +244,7 @@ void ANTrxService::ProcessMessage(ANT_MESSAGE stMessage, USHORT usSize_)
 	UCHAR ucDataOffset = MESSAGE_BUFFER_DATA2_INDEX;   // For most data messages
 
 	// For decoding device type -- legacy or current
-	static UCHAR ucDeviceType = INVALID_DEVICE;
+	static UCHAR ucDeviceType_ = INVALID_DEVICE;
 
 	switch(stMessage.ucMessageID)
 	{
@@ -480,7 +289,7 @@ void ANTrxService::ProcessMessage(ANT_MESSAGE stMessage, USHORT usSize_)
 						break;
 					}
 					printf("Channel ID set\n");
-					printf("Setting Radio Frequency...\n");
+					printf("Setting Radio Frequency %u...\n", USER_RADIOFREQ);
 					bStatus = pclMessageObject->SetChannelRFFrequency(ucAntChannel, USER_RADIOFREQ, MESSAGE_TIMEOUT);
 					break;
 				}
@@ -493,7 +302,7 @@ void ANTrxService::ProcessMessage(ANT_MESSAGE stMessage, USHORT usSize_)
 						break;
 					}
 					printf("Radio Frequency set\n");
-					printf("Setting Message Period...\n");
+					printf("Setting Message Period %u...\n", usMessagePeriod);
 					bStatus = pclMessageObject->SetChannelPeriod(ucAntChannel, usMessagePeriod, MESSAGE_TIMEOUT);
 					break;
 				}
@@ -520,7 +329,7 @@ void ANTrxService::ProcessMessage(ANT_MESSAGE stMessage, USHORT usSize_)
 						bBroadcasting = FALSE;
 						break;
 					}
-					printf("Chanel opened\n");
+					printf("Channel opened\n");
 #if defined (ENABLE_EXTENDED_MESSAGES)
 					printf("Enabling extended messages...\n");
 					pclMessageObject->RxExtMesgsEnable(TRUE);
@@ -591,9 +400,11 @@ void ANTrxService::ProcessMessage(ANT_MESSAGE stMessage, USHORT usSize_)
 					{
 						case EVENT_CHANNEL_CLOSED:
 						{
-							printf("Channel Closed\n");
-							printf("Unassigning channel...\n");
-							bStatus = pclMessageObject->UnAssignChannel(ucAntChannel, MESSAGE_TIMEOUT);
+							printf("Channel Closed\n"); // TODO
+							//printf("Unassigning channel...\n");
+							//bStatus = pclMessageObject->UnAssignChannel(ucAntChannel, MESSAGE_TIMEOUT);
+							printf("Re-opening channel...\n");
+							bStatus = pclMessageObject->OpenChannel(ucAntChannel, MESSAGE_TIMEOUT);
 							break;
 						}
 
@@ -743,10 +554,10 @@ void ANTrxService::ProcessMessage(ANT_MESSAGE stMessage, USHORT usSize_)
 		{
 			// Channel ID of the device that we just recieved a message from.
 			USHORT usDeviceNumber = stMessage.aucData[MESSAGE_BUFFER_DATA2_INDEX] | (stMessage.aucData[MESSAGE_BUFFER_DATA3_INDEX] << 8);
-			UCHAR ucDeviceType_ =  stMessage.aucData[MESSAGE_BUFFER_DATA4_INDEX];
+			UCHAR ucDeviceType__ =  stMessage.aucData[MESSAGE_BUFFER_DATA4_INDEX];
 			UCHAR ucTransmissionType = stMessage.aucData[MESSAGE_BUFFER_DATA5_INDEX];
 
-			printf("CHANNEL ID: (%d/%d/%d)\n", usDeviceNumber, ucDeviceType_, ucTransmissionType);
+			printf("CHANNEL ID: (%d/%d/%d)\n", usDeviceNumber, ucDeviceType__, ucTransmissionType);
 			break;
 		}
 		case MESG_VERSION_ID:
@@ -759,16 +570,16 @@ void ANTrxService::ProcessMessage(ANT_MESSAGE stMessage, USHORT usSize_)
 		case MESG_BROADCAST_DATA_ID:
 			// Burst not supported by ANT+ HRM
 		{
-			if (ucDeviceType == INVALID_DEVICE)
+			if (ucDeviceType_ == INVALID_DEVICE)
 			{
 				// Detecting current vs. legacy transmitter, only if not detected yet
 				static BOOL bOldToggleBit = INVALID_TOGGLE_BIT;
 				static UCHAR ucToggleAttempts = 0; // The number of attempts made so far
 				BOOL bToggleBit = stMessage.aucData[ucDataOffset + 0] >> 7;
-				DetectDevice(ucDeviceType, bOldToggleBit, ucToggleAttempts, bToggleBit);
+				DetectDevice(ucDeviceType_, bOldToggleBit, ucToggleAttempts, bToggleBit);
 			}
 
-			if ((bProcessedData) && (ucDeviceType == INVALID_DEVICE))
+			if ((bProcessedData) && (ucDeviceType_ == INVALID_DEVICE))
 			{
 				// The user wants to see processed data, but device type is not detected yet
 				break;
@@ -786,10 +597,10 @@ void ANTrxService::ProcessMessage(ANT_MESSAGE stMessage, USHORT usSize_)
 				{
 					// Channel ID of the device that we just recieved a message from.
 					USHORT usDeviceNumber = stMessage.aucData[MESSAGE_BUFFER_DATA11_INDEX] | (stMessage.aucData[MESSAGE_BUFFER_DATA12_INDEX] << 8);
-					UCHAR ucDeviceType_ =  stMessage.aucData[MESSAGE_BUFFER_DATA13_INDEX];
+					UCHAR ucDeviceType__ =  stMessage.aucData[MESSAGE_BUFFER_DATA13_INDEX];
 					UCHAR ucTransmissionType = stMessage.aucData[MESSAGE_BUFFER_DATA14_INDEX];
 
-					printf("Chan ID(%d/%d/%d) - ", usDeviceNumber, ucDeviceType_, ucTransmissionType);
+					printf("Chan ID(%d/%d/%d) - ", usDeviceNumber, ucDeviceType__, ucTransmissionType);
 				}
 			}
 
@@ -797,7 +608,9 @@ void ANTrxService::ProcessMessage(ANT_MESSAGE stMessage, USHORT usSize_)
 			bPrintBuffer = TRUE;
 			ucDataOffset = MESSAGE_BUFFER_DATA2_INDEX;   // For most data messages
 
-			msg_callback(&stMessage.aucData[ucDataOffset]);
+			if (stMessage.aucData[0] == ucAntChannel) {
+				msg_callback(&stMessage.aucData[ucDataOffset]);
+			}
 
 			if(bDisplay)
 			{
@@ -816,16 +629,16 @@ void ANTrxService::ProcessMessage(ANT_MESSAGE stMessage, USHORT usSize_)
 		case MESG_EXT_BROADCAST_DATA_ID:
 		case MESG_EXT_ACKNOWLEDGED_DATA_ID:
 		{
-			if (ucDeviceType == INVALID_DEVICE)
+			if (ucDeviceType_ == INVALID_DEVICE)
 			{
 				// Detecting current vs. legacy transmitter, only if not detected yet
 				static BOOL bOldToggleBit = INVALID_TOGGLE_BIT;
 				static UCHAR ucToggleAttempts = 0; // The number of attempts made so far
 				BOOL bToggleBit = stMessage.aucData[ucDataOffset + 0] >> 7;
-				DetectDevice(ucDeviceType, bOldToggleBit, ucToggleAttempts, bToggleBit);
+				DetectDevice(ucDeviceType_, bOldToggleBit, ucToggleAttempts, bToggleBit);
 			}
 
-			if ((bProcessedData) && (ucDeviceType == INVALID_DEVICE))
+			if ((bProcessedData) && (ucDeviceType_ == INVALID_DEVICE))
 			{
 				// The user wants to see processed data, but device type is not detected yet
 				break;
@@ -838,18 +651,20 @@ void ANTrxService::ProcessMessage(ANT_MESSAGE stMessage, USHORT usSize_)
 
 			// Channel ID of the device that we just recieved a message from.
 			USHORT usDeviceNumber = stMessage.aucData[MESSAGE_BUFFER_DATA2_INDEX] | (stMessage.aucData[MESSAGE_BUFFER_DATA3_INDEX] << 8);
-			UCHAR ucDeviceType_ =  stMessage.aucData[MESSAGE_BUFFER_DATA4_INDEX];
+			UCHAR ucDeviceType__ =  stMessage.aucData[MESSAGE_BUFFER_DATA4_INDEX];
 			UCHAR ucTransmissionType = stMessage.aucData[MESSAGE_BUFFER_DATA5_INDEX];
 
 			bPrintBuffer = TRUE;
 			ucDataOffset = MESSAGE_BUFFER_DATA6_INDEX;   // For most data messages
 
-			msg_callback(&stMessage.aucData[ucDataOffset]);
+			if (stMessage.aucData[0] == ucAntChannel) {
+				msg_callback(&stMessage.aucData[ucDataOffset]);
+			}
 
 			if(bDisplay)
 			{
 				// Display the channel id
-				printf("Chan ID(%d/%d/%d) ", usDeviceNumber, ucDeviceType_, ucTransmissionType );
+				printf("Chan ID(%d/%d/%d) ", usDeviceNumber, ucDeviceType__, ucTransmissionType );
 
 				if(stMessage.ucMessageID == MESG_EXT_ACKNOWLEDGED_DATA_ID)
 					printf("- Acked Rx:(%d): ", stMessage.aucData[MESSAGE_BUFFER_DATA1_INDEX]);
@@ -1029,30 +844,5 @@ void ANTrxService::DetectDevice(UCHAR &ucDeviceType_, BOOL &bOldToggleBit_, UCHA
 		ucDeviceType_ = LEGACY_DEVICE;
 		printf("Legacy Device detected\n");
 	}
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// PrintMenu
-//
-// Start the Test program.
-//
-////////////////////////////////////////////////////////////////////////////////
-void ANTrxService::PrintMenu()
-{
-
-	// Printout options
-	printf("\n");
-//	printf("M - Print this menu\n");
-//	printf("R - Reset\n");
-//	printf("C - Request Capabilites\n");
-//	printf("V - Request Version\n");
-	printf("I - Request Channel ID\n");
-	printf("S - Request Status\n");
-	printf("U - Request USB Descriptor\n");
-	printf("D - Toggle Display\n");
-	printf("P - Toggle Processed-Raw Data\n");
-	printf("Q - Quit\n");
-	printf("\n");
-	fflush(stdout);
 }
 

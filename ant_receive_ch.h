@@ -18,14 +18,15 @@
 
 class ANTrxService {
 public:
-	ANTrxService(DSISerialGeneric* serialObject, std::function<void(UCHAR *p_aucData)> callback);
+	ANTrxService(DSISerialGeneric* serialObject,
+	             DSIFramerANT* pclMessageObject,
+				 std::function<void(UCHAR *p_aucData)> callback);
 	virtual ~ANTrxService();
 	BOOL Init(sANTrxServiceInit sInit);
-	void Start();
+
 	void Close();
 
 private:
-	BOOL InitANT();
 
 	// Starts the Message thread.
 	static DSI_THREAD_RETURN RunMessageThread(void *pvParameter_);
@@ -36,9 +37,6 @@ private:
 	// Decodes the received message
 	void ProcessMessage(ANT_MESSAGE stMessage, USHORT usSize_);
 
-	// Print user menu
-	void PrintMenu();
-
 	// Detect transmitter device type: current or legacy
 	void DetectDevice(UCHAR &ucDeviceType_, BOOL &bOldToggleBit_, UCHAR &ucToggleAttempts_, BOOL bToggleBit);
 
@@ -46,7 +44,6 @@ private:
 	UCHAR ucTransType;
 	UCHAR ucAntChannel;
 	UCHAR ucDeviceType;
-	UCHAR ucNetworkNum;
 	USHORT usDeviceNum;
 	USHORT usMessagePeriod;
 

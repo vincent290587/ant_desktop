@@ -9,6 +9,7 @@ add_compile_options(-Werror -Wno-attributes -Wenum-compare -Wno-deprecated-decla
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/ANT-SDK_PC.3.5/ANT_LIB)
 
 add_executable(${PROJECT_NAME}
+        #ANT-SDK_PC.3.5/DEMO_HR_RECEIVER/demo_hr_receiver.cpp
         main.cpp
         ant_receive_ch.cpp)
 
