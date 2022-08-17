@@ -12,7 +12,7 @@ static void _pw1_callback(UCHAR *p_aucData) {
 	// Page specific data
 	switch(ucPageNum) // Removing the toggle bit
 	{
-		case 0:
+		case 16:
 
 			break;
 
@@ -32,7 +32,7 @@ static void _pw2_callback(UCHAR *p_aucData) {
 	// Page specific data
 	switch(ucPageNum) // Removing the toggle bit
 	{
-		case 0:
+		case 16:
 
 			break;
 
@@ -57,50 +57,8 @@ int main(int argc, char *argv[]) {
 
 	BOOL bStatus;
 
-	{
-		// Create Serial object.
-		pclSerialObject = new DSISerialGeneric();
-		assert(pclSerialObject);
-
-		// Create Framer object.
-		pclMessageObject = new DSIFramerANT(pclSerialObject);
-		assert(pclMessageObject);
-
-		// Initialize Serial object.
-		// The device number depends on how many USB sticks have been
-		// plugged into the PC. The first USB stick plugged will be 0
-		// the next 1 and so on.
-		//
-		// The Baud Rate depends on the ANT solution being used. AP1
-		// is 50000, all others are 57600
-		bStatus = pclSerialObject->Init(USER_BAUDRATE, 0);
-		assert(bStatus);
-
-		// Initialize Framer object.
-		bStatus = pclMessageObject->Init();
-		assert(bStatus);
-
-		// Let Serial know about Framer.
-		pclSerialObject->SetCallback(pclMessageObject);
-
-		// Open Serial.
-		bStatus = pclSerialObject->Open();
-
-		// If the Open function failed, most likely the device
-		// we are trying to access does not exist, or it is connected
-		// to another program
-		if(!bStatus)
-		{
-			printf("Failed to connect to device at USB port %d\n", 0);
-			return -3;
-		}
-	}
-
-	ANTrxService *pPWR1srv = new ANTrxService(
-			pclSerialObject,
-			pclMessageObject,
-			_pw1_callback);
-	assert(pPWR1srv);
+	ANTrxService *pANTsrv = new ANTrxService();
+	assert(pANTsrv);
 
 	sANTrxServiceInit sInit1 = {
 			.ucAntChannel = 0,
@@ -109,12 +67,6 @@ int main(int argc, char *argv[]) {
 			.usDeviceNum = 15568u,
 			.usMessagePeriod = PW_PERIOD_COUNTS,
 	};
-
-	ANTrxService *pPWR2srv = new ANTrxService(
-			pclSerialObject,
-			pclMessageObject,
-			_pw2_callback);
-	assert(pPWR2srv);
 
 	sANTrxServiceInit sInit2 = {
 			.ucAntChannel = 1,
@@ -126,17 +78,17 @@ int main(int argc, char *argv[]) {
 
 	int ret = 0;
 
-	if(ret == 0 && pPWR1srv->Init(sInit1) && pPWR2srv->Init(sInit2) ) { //  && pPWR2srv->Init(sInit2)
+	pANTsrv->AddSlave(sInit1, _pw1_callback);
+	pANTsrv->AddSlave(sInit2, _pw2_callback);
 
-		Start();
+	if(ret == 0 && pANTsrv->Init() ) { //  && pPWR2srv->Init(sInit2)
 
-		pPWR1srv->Start();
-		pPWR2srv->Start();
+		pANTsrv->Start();
 
 		Loop();
+
 	} else {
-		delete pPWR1srv;
-		delete pPWR2srv;
+		delete pANTsrv;
 		delete pclSerialObject;
 		delete pclMessageObject;
 		ret--;
@@ -160,26 +112,6 @@ static void PrintMenu()
 	printf("Q - Quit\n");
 	printf("\n");
 	fflush(stdout);
-}
-
-
-static void Start() {
-	BOOL bStatus = TRUE;
-
-	printf("Resetting module...\n");
-	bStatus = pclMessageObject->ResetSystem();
-	DSIThread_Sleep(1000);
-
-//	// Request capabilites.
-//	ANT_MESSAGE_ITEM stResponse;
-//	pclMessageObject->SendRequest(MESG_CAPABILITIES_ID, 0, &stResponse, 0);
-
-	// Start the test by setting network key
-	printf("Setting network key...\n");
-	UCHAR ucNetKey[8] = USER_NETWORK_KEY;
-
-	bStatus &= pclMessageObject->SetNetworkKey(0, ucNetKey, MESSAGE_TIMEOUT);
-
 }
 
 

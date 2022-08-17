@@ -4,14 +4,10 @@
 
 #include "ant_receive_ch.h"
 
-ANTrxService::ANTrxService(DSISerialGeneric* serialObject,
-                           DSIFramerANT* messageObject,
-						   std::function<void(UCHAR *p_aucData)> callback
-						   ) {
+ANTrxService::ANTrxService() {
 	ucChannelType = CHANNEL_TYPE_SLAVE; // always a slave
-	pclSerialObject = serialObject;
-	pclMessageObject = messageObject;
-	msg_callback = callback;
+	pclSerialObject = (DSISerialGeneric*)NULL;
+	pclMessageObject = (DSIFramerANT*)NULL;
 	uiDSIThread = (DSI_THREAD_ID)NULL;
 	bMyDone = FALSE;
 	bDone = FALSE;
@@ -22,7 +18,11 @@ ANTrxService::ANTrxService(DSISerialGeneric* serialObject,
 
 ANTrxService::~ANTrxService()
 {
+	if(pclMessageObject)
+		delete pclMessageObject;
 
+	if(pclSerialObject)
+		delete pclSerialObject;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -33,7 +33,7 @@ ANTrxService::~ANTrxService()
 // ucDeviceNumber_: USB Device Number (0 for first USB stick plugged and so on)
 //                  If not specified on command line, 0xFF is passed in as invalid.
 ////////////////////////////////////////////////////////////////////////////////
-BOOL ANTrxService::Init(sANTrxServiceInit sInit)
+BOOL ANTrxService::Init()
 {
 
 	BOOL bStatus;
@@ -52,6 +52,43 @@ BOOL ANTrxService::Init(sANTrxServiceInit sInit)
    DSIDebug::SetDebug(TRUE);
 #endif
 
+	// Create Serial object.
+	pclSerialObject = new DSISerialGeneric();
+	assert(pclSerialObject);
+
+	// Create Framer object.
+	pclMessageObject = new DSIFramerANT(pclSerialObject);
+	assert(pclMessageObject);
+
+	// Initialize Serial object.
+	// The device number depends on how many USB sticks have been
+	// plugged into the PC. The first USB stick plugged will be 0
+	// the next 1 and so on.
+	//
+	// The Baud Rate depends on the ANT solution being used. AP1
+	// is 50000, all others are 57600
+	bStatus = pclSerialObject->Init(USER_BAUDRATE, 0);
+	assert(bStatus);
+
+	// Initialize Framer object.
+	bStatus = pclMessageObject->Init();
+	assert(bStatus);
+
+	// Let Serial know about Framer.
+	pclSerialObject->SetCallback(pclMessageObject);
+
+	// Open Serial.
+	bStatus = pclSerialObject->Open();
+
+	// If the Open function failed, most likely the device
+	// we are trying to access does not exist, or it is connected
+	// to another program
+	if(!bStatus)
+	{
+		printf("Failed to connect to device at USB port %d\n", 0);
+		return FALSE;
+	}
+
 	// NOTE: Will fail if the module is not available.
 	// If no device number was specified on the command line,
 	// prompt the user for input.
@@ -64,78 +101,6 @@ BOOL ANTrxService::Init(sANTrxServiceInit sInit)
 //		sscanf(st, "%u", &ucDeviceNumber_);
 //	}
 	printf("USB Number: %d\n", ucDeviceNumber_);
-
-	// Prompting user for network parameters
-	// Channel Number
-//	printf("ANT Channel number? (Press Enter for default: 0)\n"); fflush(stdout);
-//	char st[1024];
-//	fgets(st, sizeof(st), stdin);
-	ucAntChannel = sInit.ucAntChannel;
-	printf("Ant Channel number: %d\n", ucAntChannel);
-
-	// Transmission type
-//	printf("ANT Transmission type? (Press Enter for wildcarding)\n"); fflush(stdout);
-//	char st1[1024];
-//	fgets(st1, sizeof(st1), stdin);
-	ucTransType = sInit.ucTransType;
-	if (ucTransType == (UCHAR)0)
-	{
-		printf("ANT Transmission type wildcarded\n");
-	}
-	else
-	{
-		printf("ANT Transmission type: %d\n", ucTransType);
-	}
-
-	// Device Number
-//	printf("Transmitter Device number? (Press Enter for wildcarding)\n"); fflush(stdout);
-//	char st2[1024];
-//	fgets(st2, sizeof(st2), stdin);
-	usDeviceNum = sInit.usDeviceNum;
-	if (usDeviceNum == (USHORT)0)
-	{
-		printf("Transmitter Device Number wildcarded\n");
-	}
-	else
-	{
-		printf("Transmitter Device Number: %d\n", usDeviceNum);
-	}
-
-	// Message Period
-//	int period_option;
-//	char st4[10];
-//	USHORT usMessagePeriods[] = USER_MESSAGE_PERIODS;
-//	int len_usMessagePeriods = sizeof(usMessagePeriods)/sizeof(USHORT);
-//	while(1)
-//	{
-//		printf("Message Period (in counts)? ");
-//		for (int i = 0; i < len_usMessagePeriods; i++)
-//		{
-//			printf("%d: %d", i, usMessagePeriods[i]);
-//			if (i != len_usMessagePeriods - 1)
-//			{
-//				printf(" , ");
-//			}
-//		}
-//		printf("\n");
-//		fflush(stdout);
-//		fgets(st4, sizeof(st4), stdin);
-//		period_option = atoi(st4);
-//		if (period_option >= len_usMessagePeriods)
-//		{
-//			printf("Invalid Period. Try again\n");
-//		}
-//		else
-//		{
-//			printf("Message Period: %d\n", usMessagePeriods[period_option]);
-//			break;
-//		}
-//	}
-	usMessagePeriod = sInit.usMessagePeriod;
-	printf("Message Period: %d (counts)\n", usMessagePeriod);
-
-	ucDeviceType = sInit.ucDeviceType;
-	printf("Device type: %d\n", ucDeviceType);
 
 	// Create message thread.
 	uiDSIThread = DSIThread_CreateThread(&ANTrxService::RunMessageThread, this);
@@ -229,24 +194,25 @@ void ANTrxService::MessageThread()
 
 void ANTrxService::Start() {
 
-	BOOL bStatus;
+	BOOL bStatus = TRUE;
 
-	bStatus = pclMessageObject->AssignChannel(ucAntChannel, PARAMETER_RX_NOT_TX, 0, MESSAGE_TIMEOUT);
-	DSIThread_Sleep(100);
+	printf("Resetting module...\n");
+	bStatus = pclMessageObject->ResetSystem();
+	DSIThread_Sleep(1000);
 
-	bStatus = pclMessageObject->SetChannelID(ucAntChannel, usDeviceNum, ucDeviceType, ucTransType, MESSAGE_TIMEOUT);
-	DSIThread_Sleep(100);
+//	// Request capabilites.
+//	ANT_MESSAGE_ITEM stResponse;
+//	pclMessageObject->SendRequest(MESG_CAPABILITIES_ID, 0, &stResponse, 0);
 
-	bStatus = pclMessageObject->SetChannelRFFrequency(ucAntChannel, USER_RADIOFREQ, MESSAGE_TIMEOUT);
-	DSIThread_Sleep(100);
+	// Start the test by setting network key
+	printf("Setting network key...\n");
+	UCHAR ucNetKey[8] = USER_NETWORK_KEY;
 
-	bStatus = pclMessageObject->SetChannelPeriod(ucAntChannel, usMessagePeriod, MESSAGE_TIMEOUT);
-	DSIThread_Sleep(100);
+	bStatus &= pclMessageObject->SetNetworkKey(0, ucNetKey, MESSAGE_TIMEOUT);
 
-	bStatus = pclMessageObject->OpenChannel(ucAntChannel, MESSAGE_TIMEOUT);
-	DSIThread_Sleep(100);
-
-	(void)bStatus;
+	for (auto slave : mDevices) {
+		slave.Start(pclMessageObject);
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -322,7 +288,7 @@ void ANTrxService::ProcessMessage(ANT_MESSAGE stMessage, USHORT usSize_)
 						break;
 					}
 					printf("Radio Frequency set\n");
-					printf("Setting Message Period %u...\n", usMessagePeriod);
+					printf("Setting Message Period...\n");
 					//bStatus = pclMessageObject->SetChannelPeriod(ucAntChannel, usMessagePeriod, MESSAGE_TIMEOUT);
 					break;
 				}
@@ -392,8 +358,8 @@ void ANTrxService::ProcessMessage(ANT_MESSAGE stMessage, USHORT usSize_)
 					{
 						// We get here if we tried to close the channel after the search timeout (slave)
 						printf("Channel is already closed\n");
-						printf("Unassigning channel...\n");
-						bStatus = pclMessageObject->UnAssignChannel(ucAntChannel, MESSAGE_TIMEOUT);
+						//printf("Unassigning channel...\n");
+						//bStatus = pclMessageObject->UnAssignChannel(ucAntChannel, MESSAGE_TIMEOUT);
 						break;
 					}
 					else if(stMessage.aucData[2] != RESPONSE_NO_ERROR)
@@ -420,11 +386,11 @@ void ANTrxService::ProcessMessage(ANT_MESSAGE stMessage, USHORT usSize_)
 					{
 						case EVENT_CHANNEL_CLOSED:
 						{
-							printf("Channel Closed\n"); // TODO
+							printf("Channel %u Closed\n", stMessage.aucData[0]);
 							//printf("Unassigning channel...\n");
 							//bStatus = pclMessageObject->UnAssignChannel(ucAntChannel, MESSAGE_TIMEOUT);
-							printf("Re-opening channel...\n");
-							bStatus = pclMessageObject->OpenChannel(ucAntChannel, MESSAGE_TIMEOUT);
+							printf("Re-opening channel %u ...\n", stMessage.aucData[0]);
+							bStatus = pclMessageObject->OpenChannel(stMessage.aucData[0], MESSAGE_TIMEOUT);
 							break;
 						}
 
@@ -628,20 +594,22 @@ void ANTrxService::ProcessMessage(ANT_MESSAGE stMessage, USHORT usSize_)
 			bPrintBuffer = TRUE;
 			ucDataOffset = MESSAGE_BUFFER_DATA2_INDEX;   // For most data messages
 
-			if (stMessage.aucData[0] == ucAntChannel) {
-				msg_callback(&stMessage.aucData[ucDataOffset]);
+			for (auto slave : mDevices) {
+				if (stMessage.aucData[0] == slave.ucAntChannel) {
+					slave.msg_callback(&stMessage.aucData[ucDataOffset]);
+				}
 			}
 
-			if(bDisplay)
-			{
-				if(stMessage.ucMessageID == MESG_ACKNOWLEDGED_DATA_ID )
-					printf("Acked Rx:(%d): ", stMessage.aucData[MESSAGE_BUFFER_DATA1_INDEX]);
-
-				else if (stMessage.ucMessageID == MESG_BROADCAST_DATA_ID)
-					printf("Rx:(%d): ", stMessage.aucData[MESSAGE_BUFFER_DATA1_INDEX]);
-
-				// Burst is not supported by ANT+ HRM
-			}
+//			if(bDisplay)
+//			{
+//				if(stMessage.ucMessageID == MESG_ACKNOWLEDGED_DATA_ID )
+//					printf("Acked Rx:(%d): ", stMessage.aucData[MESSAGE_BUFFER_DATA1_INDEX]);
+//
+//				else if (stMessage.ucMessageID == MESG_BROADCAST_DATA_ID)
+//					printf("Rx:(%d): ", stMessage.aucData[MESSAGE_BUFFER_DATA1_INDEX]);
+//
+//				// Burst is not supported by ANT+ HRM
+//			}
 			break;
 
 		}
@@ -677,23 +645,25 @@ void ANTrxService::ProcessMessage(ANT_MESSAGE stMessage, USHORT usSize_)
 			bPrintBuffer = TRUE;
 			ucDataOffset = MESSAGE_BUFFER_DATA6_INDEX;   // For most data messages
 
-			if (stMessage.aucData[0] == ucAntChannel) {
-				msg_callback(&stMessage.aucData[ucDataOffset]);
+			for (auto slave : mDevices) {
+				if (stMessage.aucData[0] == slave.ucAntChannel) {
+					slave.msg_callback(&stMessage.aucData[ucDataOffset]);
+				}
 			}
 
-			if(bDisplay)
-			{
-				// Display the channel id
-				printf("Chan ID(%d/%d/%d) ", usDeviceNumber, ucDeviceType__, ucTransmissionType );
-
-				if(stMessage.ucMessageID == MESG_EXT_ACKNOWLEDGED_DATA_ID)
-					printf("- Acked Rx:(%d): ", stMessage.aucData[MESSAGE_BUFFER_DATA1_INDEX]);
-
-				else if(stMessage.ucMessageID == MESG_EXT_BROADCAST_DATA_ID)
-					printf("- Rx:(%d): ", stMessage.aucData[MESSAGE_BUFFER_DATA1_INDEX]);
-
-				// Burst not supported by ANT+ HRM
-			}
+//			if(bDisplay)
+//			{
+//				// Display the channel id
+//				printf("Chan ID(%d/%d/%d) ", usDeviceNumber, ucDeviceType__, ucTransmissionType );
+//
+//				if(stMessage.ucMessageID == MESG_EXT_ACKNOWLEDGED_DATA_ID)
+//					printf("- Acked Rx:(%d): ", stMessage.aucData[MESSAGE_BUFFER_DATA1_INDEX]);
+//
+//				else if(stMessage.ucMessageID == MESG_EXT_BROADCAST_DATA_ID)
+//					printf("- Rx:(%d): ", stMessage.aucData[MESSAGE_BUFFER_DATA1_INDEX]);
+//
+//				// Burst not supported by ANT+ HRM
+//			}
 
 			break;
 		}

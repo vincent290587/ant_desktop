@@ -16,13 +16,63 @@
 #include <assert.h>
 //#include <string.h>
 
+class ANTdevice {
+	friend class ANTrxService;
+
+public:
+	ANTdevice(sANTrxServiceInit sInit,
+	          std::function<void(UCHAR *p_aucData)> callback) {
+		ucTransType = sInit.ucTransType;
+		ucAntChannel = sInit.ucAntChannel;
+		ucDeviceType = sInit.ucDeviceType;
+		usDeviceNum = sInit.usDeviceNum;
+		usMessagePeriod = sInit.usMessagePeriod;
+
+		msg_callback = callback;
+	}
+
+private:
+
+	// Network variables
+	UCHAR ucTransType;
+	UCHAR ucAntChannel;
+	UCHAR ucDeviceType;
+	USHORT usDeviceNum;
+	USHORT usMessagePeriod;
+
+	std::function<void(UCHAR *p_aucData)> msg_callback;
+
+	void Start(DSIFramerANT* pclMessageObject) {
+		BOOL bStatus;
+
+		bStatus = pclMessageObject->AssignChannel(ucAntChannel, PARAMETER_RX_NOT_TX, 0, MESSAGE_TIMEOUT);
+		DSIThread_Sleep(100);
+
+		bStatus = pclMessageObject->SetChannelID(ucAntChannel, usDeviceNum, ucDeviceType, ucTransType, MESSAGE_TIMEOUT);
+		DSIThread_Sleep(100);
+
+		bStatus = pclMessageObject->SetChannelRFFrequency(ucAntChannel, USER_RADIOFREQ, MESSAGE_TIMEOUT);
+		DSIThread_Sleep(100);
+
+		bStatus = pclMessageObject->SetChannelPeriod(ucAntChannel, usMessagePeriod, MESSAGE_TIMEOUT);
+		DSIThread_Sleep(100);
+
+		bStatus = pclMessageObject->OpenChannel(ucAntChannel, MESSAGE_TIMEOUT);
+		DSIThread_Sleep(100);
+
+		(void)bStatus;
+	}
+};
+
 class ANTrxService {
 public:
-	ANTrxService(DSISerialGeneric* serialObject,
-	             DSIFramerANT* pclMessageObject,
-				 std::function<void(UCHAR *p_aucData)> callback);
+	ANTrxService();
 	virtual ~ANTrxService();
-	BOOL Init(sANTrxServiceInit sInit);
+	BOOL Init();
+
+	void AddSlave(sANTrxServiceInit sInit, std::function<void(UCHAR *p_aucData)> callback) {
+		mDevices.push_back(ANTdevice(sInit, callback));
+	}
 
 	void Start();
 	void Close();
@@ -41,12 +91,14 @@ private:
 	// Detect transmitter device type: current or legacy
 	void DetectDevice(UCHAR &ucDeviceType_, BOOL &bOldToggleBit_, UCHAR &ucToggleAttempts_, BOOL bToggleBit);
 
-	// Network variables
-	UCHAR ucTransType;
-	UCHAR ucAntChannel;
-	UCHAR ucDeviceType;
-	USHORT usDeviceNum;
-	USHORT usMessagePeriod;
+	std::vector<ANTdevice> mDevices;
+
+//	// Network variables
+//	UCHAR ucTransType;
+//	UCHAR ucAntChannel;
+//	UCHAR ucDeviceType;
+//	USHORT usDeviceNum;
+//	USHORT usMessagePeriod;
 
 	BOOL bBursting; // Holds whether the bursting phase of the test has started
 	BOOL bBroadcasting;
@@ -58,8 +110,6 @@ private:
 	DSI_THREAD_ID uiDSIThread;
 	DSI_CONDITION_VAR condTestDone;
 	DSI_MUTEX mutexTestDone;
-
-	std::function<void(UCHAR *p_aucData)> msg_callback;
 
 	BOOL bDisplay;
 	BOOL bProcessedData;
