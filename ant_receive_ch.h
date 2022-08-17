@@ -24,6 +24,7 @@ public:
 	virtual ~ANTrxService();
 	BOOL Init(sANTrxServiceInit sInit);
 
+	void Start();
 	void Close();
 
 private:

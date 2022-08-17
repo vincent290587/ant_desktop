@@ -214,9 +214,8 @@ void ANTrxService::MessageThread()
 
 			if(usSize != DSI_FRAMER_ERROR && usSize != DSI_FRAMER_TIMEDOUT && usSize != 0)
 			{
-				if (1 || stMessage.aucData[0] == ucAntChannel) {
-					ProcessMessage(stMessage, usSize);
-				}
+				//printf("ProcessMessage %u \n", stMessage.aucData[0]);
+				ProcessMessage(stMessage, usSize);
 			}
 		}
 	}
@@ -228,6 +227,27 @@ void ANTrxService::MessageThread()
 
 }
 
+void ANTrxService::Start() {
+
+	BOOL bStatus;
+
+	bStatus = pclMessageObject->AssignChannel(ucAntChannel, PARAMETER_RX_NOT_TX, 0, MESSAGE_TIMEOUT);
+	DSIThread_Sleep(100);
+
+	bStatus = pclMessageObject->SetChannelID(ucAntChannel, usDeviceNum, ucDeviceType, ucTransType, MESSAGE_TIMEOUT);
+	DSIThread_Sleep(100);
+
+	bStatus = pclMessageObject->SetChannelRFFrequency(ucAntChannel, USER_RADIOFREQ, MESSAGE_TIMEOUT);
+	DSIThread_Sleep(100);
+
+	bStatus = pclMessageObject->SetChannelPeriod(ucAntChannel, usMessagePeriod, MESSAGE_TIMEOUT);
+	DSIThread_Sleep(100);
+
+	bStatus = pclMessageObject->OpenChannel(ucAntChannel, MESSAGE_TIMEOUT);
+	DSIThread_Sleep(100);
+
+	(void)bStatus;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // ProcessMessage
@@ -263,7 +283,7 @@ void ANTrxService::ProcessMessage(ANT_MESSAGE stMessage, USHORT usSize_)
 					}
 					printf("Network key set.\n");
 					printf("Assigning channel...\n");
-					bStatus = pclMessageObject->AssignChannel(ucAntChannel, PARAMETER_RX_NOT_TX, 0, MESSAGE_TIMEOUT);
+					//bStatus = pclMessageObject->AssignChannel(ucAntChannel, PARAMETER_RX_NOT_TX, 0, MESSAGE_TIMEOUT);
 					break;
 				}
 
@@ -276,7 +296,7 @@ void ANTrxService::ProcessMessage(ANT_MESSAGE stMessage, USHORT usSize_)
 					}
 					printf("Channel assigned\n");
 					printf("Setting Channel ID...\n");
-					bStatus = pclMessageObject->SetChannelID(ucAntChannel, usDeviceNum, ucDeviceType, ucTransType, MESSAGE_TIMEOUT);
+					//bStatus = pclMessageObject->SetChannelID(ucAntChannel, usDeviceNum, ucDeviceType, ucTransType, MESSAGE_TIMEOUT);
 					break;
 				}
 
@@ -290,7 +310,7 @@ void ANTrxService::ProcessMessage(ANT_MESSAGE stMessage, USHORT usSize_)
 					}
 					printf("Channel ID set\n");
 					printf("Setting Radio Frequency %u...\n", USER_RADIOFREQ);
-					bStatus = pclMessageObject->SetChannelRFFrequency(ucAntChannel, USER_RADIOFREQ, MESSAGE_TIMEOUT);
+					//bStatus = pclMessageObject->SetChannelRFFrequency(ucAntChannel, USER_RADIOFREQ, MESSAGE_TIMEOUT);
 					break;
 				}
 
@@ -303,7 +323,7 @@ void ANTrxService::ProcessMessage(ANT_MESSAGE stMessage, USHORT usSize_)
 					}
 					printf("Radio Frequency set\n");
 					printf("Setting Message Period %u...\n", usMessagePeriod);
-					bStatus = pclMessageObject->SetChannelPeriod(ucAntChannel, usMessagePeriod, MESSAGE_TIMEOUT);
+					//bStatus = pclMessageObject->SetChannelPeriod(ucAntChannel, usMessagePeriod, MESSAGE_TIMEOUT);
 					break;
 				}
 
@@ -317,7 +337,7 @@ void ANTrxService::ProcessMessage(ANT_MESSAGE stMessage, USHORT usSize_)
 					printf("Message period assigned\n");
 					printf("Opening channel...\n");
 					bBroadcasting = TRUE;
-					bStatus = pclMessageObject->OpenChannel(ucAntChannel, MESSAGE_TIMEOUT);
+					//bStatus = pclMessageObject->OpenChannel(ucAntChannel, MESSAGE_TIMEOUT);
 					break;
 				}
 

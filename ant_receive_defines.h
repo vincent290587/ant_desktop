@@ -17,7 +17,7 @@ typedef struct {
 #define CHANNEL_TYPE_SLAVE        (1)
 #define CHANNEL_TYPE_INVALID      (2)
 
-#define ENABLE_EXTENDED_MESSAGES
+//#define ENABLE_EXTENDED_MESSAGES
 #define USER_BAUDRATE         (57600)  // For AT3/AP2, use 57600
 
 // Page decoding constants

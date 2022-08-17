@@ -7,7 +7,7 @@ static void _pw1_callback(UCHAR *p_aucData) {
 
 	UCHAR ucPageNum = p_aucData[0];
 
-	printf("Page: %d received\n", ucPageNum);
+	printf("Dev 0 Page: %d received\n", ucPageNum);
 
 	// Page specific data
 	switch(ucPageNum) // Removing the toggle bit
@@ -27,7 +27,7 @@ static void _pw2_callback(UCHAR *p_aucData) {
 
 	UCHAR ucPageNum = p_aucData[0];
 
-	printf("Page: %d received\n", ucPageNum);
+	printf("Dev 1 Page: %d received\n", ucPageNum);
 
 	// Page specific data
 	switch(ucPageNum) // Removing the toggle bit
@@ -47,6 +47,7 @@ static void _pw2_callback(UCHAR *p_aucData) {
 #define PW_DEVICE_TYPE   0x0Bu
 
 static void Start();
+static void Loop();
 
 BOOL bMyDone = FALSE;
 DSISerialGeneric* pclSerialObject = nullptr;
@@ -125,9 +126,14 @@ int main(int argc, char *argv[]) {
 
 	int ret = 0;
 
-	//Start();
-	if(ret == 0 && pPWR1srv->Init(sInit1) /* && pPWR2srv->Init(sInit2) */) {
+	if(ret == 0 && pPWR1srv->Init(sInit1) && pPWR2srv->Init(sInit2) ) { //  && pPWR2srv->Init(sInit2)
+
 		Start();
+
+		pPWR1srv->Start();
+		pPWR2srv->Start();
+
+		Loop();
 	} else {
 		delete pPWR1srv;
 		delete pPWR2srv;
@@ -157,24 +163,29 @@ static void PrintMenu()
 }
 
 
-static void Start()
-{
+static void Start() {
 	BOOL bStatus = TRUE;
 
 	printf("Resetting module...\n");
 	bStatus = pclMessageObject->ResetSystem();
 	DSIThread_Sleep(1000);
 
-	// Request capabilites.
-	ANT_MESSAGE_ITEM stResponse;
-	pclMessageObject->SendRequest(MESG_CAPABILITIES_ID, 0, &stResponse, 0);
-
+//	// Request capabilites.
+//	ANT_MESSAGE_ITEM stResponse;
+//	pclMessageObject->SendRequest(MESG_CAPABILITIES_ID, 0, &stResponse, 0);
 
 	// Start the test by setting network key
 	printf("Setting network key...\n");
 	UCHAR ucNetKey[8] = USER_NETWORK_KEY;
 
 	bStatus &= pclMessageObject->SetNetworkKey(0, ucNetKey, MESSAGE_TIMEOUT);
+
+}
+
+
+static void Loop()
+{
+	BOOL bStatus = TRUE;
 
 	// If the Open function failed, most likely the device
 	// we are trying to access does not exist, or it is connected
