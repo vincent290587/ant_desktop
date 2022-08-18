@@ -77,6 +77,8 @@ public:
 	void Start();
 	void Close();
 
+	void PrintUsbDescr();
+
 private:
 
 	// Starts the Message thread.

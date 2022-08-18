@@ -119,6 +119,31 @@ BOOL ANTrxService::Init()
 }
 
 
+void ANTrxService::PrintUsbDescr() {
+
+	// Print out information about the device we are connected to
+	printf("USB Device Description\n");
+	USHORT usDevicePID;
+	USHORT usDeviceVID;
+	UCHAR aucDeviceDescription[USB_MAX_STRLEN];
+	UCHAR aucDeviceSerial[USB_MAX_STRLEN];
+	// Retrieve info
+	if(pclMessageObject->GetDeviceUSBVID(usDeviceVID))
+	{
+		printf("  VID: 0x%X\n", usDeviceVID);
+	}
+	if(pclMessageObject->GetDeviceUSBPID(usDevicePID))
+	{
+		printf("  PID: 0x%X\n", usDevicePID);
+	}
+	if(pclMessageObject->GetDeviceUSBInfo(pclSerialObject->GetDeviceNumber(), aucDeviceDescription, aucDeviceSerial, USB_MAX_STRLEN))
+	{
+		printf("  Product Description: %s\n", aucDeviceDescription);
+		printf("  Serial String: %s\n", aucDeviceSerial);
+	}
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // Close
 //

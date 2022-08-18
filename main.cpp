@@ -55,7 +55,7 @@ static void _pw2_callback(UCHAR *p_aucData) {
 #define PW_PERIOD_COUNTS 8182u
 #define PW_DEVICE_TYPE   0x0Bu
 
-static void Loop();
+static void Loop(ANTrxService *const pANTsrv);
 
 BOOL bMyDone = FALSE;
 
@@ -117,7 +117,7 @@ int main(int argc, char *argv[]) {
 
 		pANTsrv->Start();
 
-		Loop();
+		Loop(pANTsrv);
 
 	} else {
 		delete pANTsrv;
@@ -145,75 +145,49 @@ static void PrintMenu()
 }
 
 
-static void Loop()
+static void Loop(ANTrxService *const pANTsrv)
 {
-	BOOL bStatus = TRUE;
+	printf("Initialisation was successful!\n"); fflush(stdout);
 
-	// If the Open function failed, most likely the device
-	// we are trying to access does not exist, or it is connected
-	// to another program
-	if(!bStatus)
+	printf("\n");
+	printf("U - Request USB Descriptor\n");
+	printf("Q - Quit\n");
+	printf("\n");
+	fflush(stdout);
+
+	while(!bMyDone)
 	{
-		printf("ANT initialisation failed!\n"); fflush(stdout);
-		return;
-	}
+		UCHAR ucChar;
+		char st[1024];
+		fgets(st, sizeof(st), stdin);
+		sscanf(st, "%c", &ucChar);
 
-	if(bStatus) {
-		printf("ANT initialisation was successful!\n"); fflush(stdout);
-		PrintMenu();
-
-		while(!bMyDone)
+		switch(ucChar)
 		{
-			UCHAR ucChar;
-			char st[1024];
-			fgets(st, sizeof(st), stdin);
-			sscanf(st, "%c", &ucChar);
-
-			switch(ucChar)
+			case 'Q':
+			case 'q':
 			{
-				case 'Q':
-				case 'q':
-				{
-					// Quit
-					printf("Closing channels...\n");
-					bMyDone = TRUE;
-					break;
-				}
-
-				case 'u':
-				case 'U':
-				{
-					// Print out information about the device we are connected to
-					printf("USB Device Description\n");
-					USHORT usDevicePID;
-					USHORT usDeviceVID;
-					UCHAR aucDeviceDescription[USB_MAX_STRLEN];
-					UCHAR aucDeviceSerial[USB_MAX_STRLEN];
-//					// Retrieve info
-//					if(pclMessageObject->GetDeviceUSBVID(usDeviceVID))
-//					{
-//						printf("  VID: 0x%X\n", usDeviceVID);
-//					}
-//					if(pclMessageObject->GetDeviceUSBPID(usDevicePID))
-//					{
-//						printf("  PID: 0x%X\n", usDevicePID);
-//					}
-//					if(pclMessageObject->GetDeviceUSBInfo(pclSerialObject->GetDeviceNumber(), aucDeviceDescription, aucDeviceSerial, USB_MAX_STRLEN))
-//					{
-//						printf("  Product Description: %s\n", aucDeviceDescription);
-//						printf("  Serial String: %s\n", aucDeviceSerial);
-//					}
-					break;
-				}
-
-				default:
-				{
-					break;
-				}
+				// Quit
+				printf("Closing channels...\n");
+				bMyDone = TRUE;
+				break;
 			}
-			DSIThread_Sleep(0);
+
+			case 'u':
+			case 'U':
+			{
+				// Print out information about the device we are connected to
+				pANTsrv->PrintUsbDescr();
+				break;
+			}
+
+			default:
+			{
+				break;
+			}
 		}
+
+		DSIThread_Sleep(0);
 	}
 
-	return;
 }
