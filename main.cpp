@@ -113,7 +113,7 @@ int main(int argc, char *argv[]) {
 	DSI_THREAD_ID uiDSIThread = DSIThread_CreateThread(_io_task, NULL);
 	assert(uiDSIThread);
 
-	if(ret == 0 && pANTsrv->Init() ) {
+	if( pANTsrv->Init() ) {
 
 		pANTsrv->Start();
 
@@ -128,23 +128,11 @@ int main(int argc, char *argv[]) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// PrintMenu
+// Loop
 //
 // Start the Test program.
 //
 ////////////////////////////////////////////////////////////////////////////////
-static void PrintMenu()
-{
-
-	// Printout options
-	printf("\n");
-	printf("U - Request USB Descriptor\n");
-	printf("Q - Quit\n");
-	printf("\n");
-	fflush(stdout);
-}
-
-
 static void Loop(ANTrxService *const pANTsrv)
 {
 	printf("Initialisation was successful!\n"); fflush(stdout);
