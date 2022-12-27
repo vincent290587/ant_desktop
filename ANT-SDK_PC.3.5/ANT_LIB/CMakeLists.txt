@@ -24,7 +24,8 @@ aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/software/serial    SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/software/USB/devices    SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/software/USB/device_handles    SRCS)
 
-add_library(ANT_LIB STATIC ${SDK_SRCS} ${SRCS})
+add_library(ANT_LIB STATIC
+        ${SDK_SRCS} ${SRCS})
 
 target_include_directories(ANT_LIB PUBLIC ${SDK_INCLUDES})
 
