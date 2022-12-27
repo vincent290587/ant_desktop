@@ -1,6 +1,0 @@
-C:/Users/vgol/Documents/01_Firmware/xx_BlackOps/ant_test/ANT-SDK_PC.3.5/cmake-build-debug/CMakeFiles/ANT_DLL.dir
-C:/Users/vgol/Documents/01_Firmware/xx_BlackOps/ant_test/ANT-SDK_PC.3.5/cmake-build-debug/CMakeFiles/edit_cache.dir
-C:/Users/vgol/Documents/01_Firmware/xx_BlackOps/ant_test/ANT-SDK_PC.3.5/cmake-build-debug/CMakeFiles/rebuild_cache.dir
-C:/Users/vgol/Documents/01_Firmware/xx_BlackOps/ant_test/ANT-SDK_PC.3.5/cmake-build-debug/ANT_LIB/CMakeFiles/ANT_LIB.dir
-C:/Users/vgol/Documents/01_Firmware/xx_BlackOps/ant_test/ANT-SDK_PC.3.5/cmake-build-debug/ANT_LIB/CMakeFiles/edit_cache.dir
-C:/Users/vgol/Documents/01_Firmware/xx_BlackOps/ant_test/ANT-SDK_PC.3.5/cmake-build-debug/ANT_LIB/CMakeFiles/rebuild_cache.dir
