@@ -17,13 +17,15 @@ endif()
 
 include_directories(
         ./
+        ${CMAKE_CURRENT_SOURCE_DIR}/AntPlusPlugin/Source/ThirdParty/AntPlusPluginLibrary
 )
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/ANT-SDK_PC.3.5/ANT_LIB ./libs/ant_plus)
 
-set(SOURCES ant_receive_ch.cpp)
-
-aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/AntPlusPlugin/Source/ThirdParty/AntPlusPluginLibrary SOURCES)
+set(SOURCES
+        ue5_lib.cpp
+        ant_receive_ch.cpp
+        )
 
 add_executable(${PROJECT_NAME}
         main.cpp
