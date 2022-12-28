@@ -7,6 +7,8 @@
 
 The project was used in CLion IDE.
 
+For commercial purposes please contact me :-)
+
 ## Using in UE-5
 
 - Needs to be compiled for Windows with the MS BuildTools toolset using architecture x64
