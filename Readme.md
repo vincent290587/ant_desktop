@@ -2,6 +2,7 @@
 # Intro
 
 - [x] Works with Unreal 5.1 on Windows
+- [ ] Adapt CMake for MAc/ Linux targets
 - [ ] Test on macOS
 - [ ] Test on Linux
 
