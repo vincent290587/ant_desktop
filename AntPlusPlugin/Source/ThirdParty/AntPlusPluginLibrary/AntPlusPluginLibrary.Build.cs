@@ -11,29 +11,18 @@ public class AntPlusPluginLibrary : ModuleRules
 
 		if (Target.Platform == UnrealTargetPlatform.Win64)
 		{
-			// Add the import library
-			//PublicAdditionalLibraries.Add(Path.Combine(ModuleDirectory, "x64", "libant_test_DLL.dll.a"));
-
-			// Delay-load the DLL, so we can load it from the right place first
-			//PublicDelayLoadDLLs.Add("libant_test_DLL.dll");
-
-			// Ensure that the DLL is staged along with the executable
-			//RuntimeDependencies.Add(Path.Combine(ModuleDirectory, "x64", "libant_test_DLL.dll"));
-
 			PublicPreBuildLibraries.Add(Path.Combine(ModuleDirectory, "x64", "ant_lib.lib"));
 			PublicPreBuildLibraries.Add(Path.Combine(ModuleDirectory, "x64", "ant_test_DLL.lib"));
         }
         else if (Target.Platform == UnrealTargetPlatform.Mac)
         {
-            //PublicDelayLoadDLLs.Add(Path.Combine(ModuleDirectory, "Mac", "Release", "libExampleLibrary.dylib"));
-            //RuntimeDependencies.Add("$(PluginDir)/Source/ThirdParty/AntPlusPluginLibrary/Mac/Release/libExampleLibrary.dylib");
+			PublicPreBuildLibraries.Add(Path.Combine(ModuleDirectory, "Mac", "ant_lib.a"));
+			PublicPreBuildLibraries.Add(Path.Combine(ModuleDirectory, "Mac", "ant_test_DLL.a"));
         }
         else if (Target.Platform == UnrealTargetPlatform.Linux)
 		{
-			//string ExampleSoPath = Path.Combine("$(PluginDir)", "Binaries", "ThirdParty", "AntPlusPluginLibrary", "Linux", "x86_64-unknown-linux-gnu", "libExampleLibrary.so");
-			//PublicAdditionalLibraries.Add(ExampleSoPath);
-			//PublicDelayLoadDLLs.Add(ExampleSoPath);
-			//RuntimeDependencies.Add(ExampleSoPath);
+			PublicPreBuildLibraries.Add(Path.Combine(ModuleDirectory, "Linux_x86_64", "ant_lib.a"));
+			PublicPreBuildLibraries.Add(Path.Combine(ModuleDirectory, "Linux_x86_64", "ant_test_DLL.a"));
 		}
 	}
 }
