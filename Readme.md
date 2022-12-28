@@ -5,6 +5,8 @@
 - [ ] Test on macOS
 - [ ] Test on Linux
 
+The project was used in CLion IDE.
+
 ## Using in UE-5
 
 - Needs to be compiled for Windows with the MS BuildTools toolset using architecture x64
