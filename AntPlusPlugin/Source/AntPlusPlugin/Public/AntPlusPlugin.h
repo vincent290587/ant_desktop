@@ -8,11 +8,13 @@ class FAntPlusPluginModule : public IModuleInterface
 {
 public:
 
-	/** IModuleInterface implementation */
-	virtual void StartupModule() override;
-	virtual void ShutdownModule() override;
+    /** IModuleInterface implementation */
+    virtual void StartupModule() override;
+    virtual void ShutdownModule() override;
+
+    int connectDeviceID(unsigned short devID);
+    unsigned short getRawPower(void);
 
 private:
-	/** Handle to the test dll we will load */
-	void*	ExampleLibraryHandle;
+
 };

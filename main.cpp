@@ -88,21 +88,19 @@ int main(int argc, char *argv[]) {
 	ANTrxService *pANTsrv = new ANTrxService();
 	assert(pANTsrv);
 
-	sANTrxServiceInit sInit1 = {
-			.ucAntChannel = 0,
-			.ucTransType = 0,
-			.ucDeviceType = PW_DEVICE_TYPE,
-			.usDeviceNum = 15568u,
-			.usMessagePeriod = PW_PERIOD_COUNTS,
-	};
+    sANTrxServiceInit sInit1;
+    sInit1.ucAntChannel = 0;
+    sInit1.ucTransType = 0;
+    sInit1.ucDeviceType = PW_DEVICE_TYPE;
+    sInit1.usDeviceNum = 15568u;
+    sInit1.usMessagePeriod = PW_PERIOD_COUNTS;
 
-	sANTrxServiceInit sInit2 = {
-			.ucAntChannel = 1,
-			.ucTransType = 0,
-			.ucDeviceType = PW_DEVICE_TYPE,
-			.usDeviceNum = 0xEFAC,
-			.usMessagePeriod = PW_PERIOD_COUNTS,
-	};
+	sANTrxServiceInit sInit2;
+    sInit2.ucAntChannel = 0;
+    sInit2.ucTransType = 0;
+    sInit2.ucDeviceType = PW_DEVICE_TYPE;
+    sInit2.usDeviceNum = 0xEFAC;
+    sInit2.usMessagePeriod = PW_PERIOD_COUNTS;
 
 	int ret = 0;
 

@@ -3,6 +3,15 @@
 
 ## Using in UE-5
 
-- Tools > New C++ class > Empty C++ class
-- 
+- Needs to be compiled with Visual Studio toolchain x64
+- Needs to be a Release
 
+## Unused commands I want to keep
+
+```bash
+cmake -S . -G "Visual Studio 16 2019" -B vstudio -A Win64
+```
+
+```bash
+msbuild vstudio/ant_test.sln
+```

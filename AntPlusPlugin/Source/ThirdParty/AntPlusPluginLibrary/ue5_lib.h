@@ -17,6 +17,14 @@
 extern "C" {
 #endif // defined C++
 
+int startupAntPlusLib(void);
+
+int addDeviceID(unsigned short devID);
+
+int endAntPlusLib(void);
+
+unsigned short getPower(void);
+
 int getIntPlusPlus(int lastInt);
 
 #if defined(__cplusplus)

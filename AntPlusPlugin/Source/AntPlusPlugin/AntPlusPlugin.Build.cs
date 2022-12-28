@@ -28,7 +28,6 @@ public class AntPlusPlugin : ModuleRules
 			new string[]
 			{
 				"Core",
-				"AntPlusPluginLibrary",
 				"Projects"
 				// ... add other public dependencies that you statically link with here ...
 			}
@@ -39,6 +38,7 @@ public class AntPlusPlugin : ModuleRules
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
+				"AntPlusPluginLibrary",
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

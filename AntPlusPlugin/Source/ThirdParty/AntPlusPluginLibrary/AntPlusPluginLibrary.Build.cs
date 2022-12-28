@@ -11,8 +11,17 @@ public class AntPlusPluginLibrary : ModuleRules
 
 		if (Target.Platform == UnrealTargetPlatform.Win64)
 		{
-			// Add the library
-			PublicPreBuildLibraries.Add(Path.Combine(ModuleDirectory, "x64", "libant_test_DLL.a"));
+			// Add the import library
+			//PublicAdditionalLibraries.Add(Path.Combine(ModuleDirectory, "x64", "libant_test_DLL.dll.a"));
+
+			// Delay-load the DLL, so we can load it from the right place first
+			//PublicDelayLoadDLLs.Add("libant_test_DLL.dll");
+
+			// Ensure that the DLL is staged along with the executable
+			//RuntimeDependencies.Add(Path.Combine(ModuleDirectory, "x64", "libant_test_DLL.dll"));
+
+			PublicPreBuildLibraries.Add(Path.Combine(ModuleDirectory, "x64", "ant_lib.lib"));
+			PublicPreBuildLibraries.Add(Path.Combine(ModuleDirectory, "x64", "ant_test_DLL.lib"));
         }
         else if (Target.Platform == UnrealTargetPlatform.Mac)
         {
