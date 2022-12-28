@@ -24,17 +24,14 @@
 
 #define VERIFY(COND, RET)    if (!(COND)) { return (RET); }
 
-static void _pw1_callback(UCHAR *);
-static void Loop(ANTrxService *const);
-
 static ANTrxService *pANTsrv = nullptr;
+static UCHAR m_current_channel = 0;
 
-static volatile USHORT power1;
-static volatile BOOL bMyDone = FALSE;
-
-int startupAntPlusLib(void) {
+int ue5_lib__startupAntPlusLib(void) {
     pANTsrv = new ANTrxService();
     VERIFY(pANTsrv, -1);
+
+    m_current_channel = 0u;
 
 #if defined _WIN32 || defined _WIN64
     MessageBox(NULL, TEXT("Started!"), TEXT("AntPlus Plugin"), MB_OK);
@@ -45,34 +42,32 @@ int startupAntPlusLib(void) {
     return 0;
 }
 
-int endAntPlusLib(void) {
-    bMyDone = TRUE;
-
-//    if (pANTsrv != nullptr) {
-//
-//        pANTsrv->Close();
-//        delete pANTsrv;
-//        pANTsrv = nullptr;
-//    }
-
+int ue5_lib__endAntPlusLib(void) {
     return 0;
 }
 
-#define PW_PERIOD_COUNTS 8182u
-#define PW_DEVICE_TYPE   0x0Bu
-
-int addDeviceID(unsigned short devID) {
+int ue5_lib__addDeviceID(unsigned short usDeviceNum,
+                unsigned char ucDeviceType,
+                unsigned short usMessagePeriod,
+                std::function<void(UCHAR *p_aucData)> callback) {
 
     VERIFY(pANTsrv, -1);
 
     sANTrxServiceInit sInit1;
-    sInit1.ucAntChannel = 0;
+    sInit1.ucAntChannel = m_current_channel++;
     sInit1.ucTransType = 0;
-    sInit1.ucDeviceType = PW_DEVICE_TYPE;
-    sInit1.usDeviceNum = devID;
-    sInit1.usMessagePeriod = PW_PERIOD_COUNTS;
+    sInit1.ucDeviceType = ucDeviceType;
+    sInit1.usDeviceNum = usDeviceNum;
+    sInit1.usMessagePeriod = usMessagePeriod;
 
-    pANTsrv->AddSlave(sInit1, _pw1_callback);
+    pANTsrv->AddSlave(sInit1, callback);
+
+    return 0;
+}
+
+int ue5_lib__startANT(void) {
+
+    VERIFY(pANTsrv, -1);
 
     if( pANTsrv->Init() ) {
 
@@ -89,90 +84,7 @@ int addDeviceID(unsigned short devID) {
 
         return -2;
     }
+
+    return 0;
 }
-
-int getIntPlusPlus(int lastInt)
-{
-#if defined _WIN32 || defined _WIN64
-    MessageBox(NULL, TEXT("Hi there"), TEXT("Third Party Plugin"), MB_OK);
-#else
-    printf("Loaded ExampleLibrary from Third Party Plugin sample");
-#endif
-    return int(++lastInt);
-}
-
-unsigned short getPower(void) {
-    return power1;
-}
-
-/////////////////////////////////////////////////////////////////////////////////
-
-static void _pw1_callback(UCHAR *p_aucData) {
-
-    UCHAR ucPageNum = p_aucData[0];
-
-    //printf("Dev 0 Page: %d received\n", ucPageNum);
-
-    // Page specific data
-    switch(ucPageNum) // Removing the toggle bit
-    {
-        case 16:
-        {
-            power1 = p_aucData[6] + p_aucData[7]*0xFF;
-            //printf("Dev 0 Page: power %u received\n", power1);
-        }
-            break;
-
-        default:
-
-            break;
-
-    }
-}
-
-//static void Loop(ANTrxService *const p_srv)
-//{
-//
-//    while(!bMyDone)
-//    {
-////        UCHAR ucChar;
-////        char st[1024];
-////        fgets(st, sizeof(st), stdin);
-////        sscanf(st, "%c", &ucChar);
-////
-////        switch(ucChar)
-////        {
-////            case 'Q':
-////            case 'q':
-////            {
-////                // Quit
-////                printf("Closing channels...\n");
-////                bMyDone = TRUE;
-////                break;
-////            }
-////
-////            case 'u':
-////            case 'U':
-////            {
-////                // Print out information about the device we are connected to
-////                pANTsrv->PrintUsbDescr();
-////                break;
-////            }
-////
-////            default:
-////            {
-////                break;
-////            }
-////        }
-//
-//        DSIThread_Sleep(100);
-//    }
-//
-//    pANTsrv->Close();
-//
-//    delete pANTsrv;
-//
-//    pANTsrv = nullptr;
-//}
-
 

@@ -2,30 +2,29 @@
 // Created by vince on 26/12/2022.
 //
 
-#if defined _WIN32 || defined _WIN64
-#define EXAMPLELIBRARY_IMPORT __declspec(dllimport)
-#elif defined __linux__
-#define EXAMPLELIBRARY_IMPORT __attribute__((visibility("default")))
-#else
-#define EXAMPLELIBRARY_IMPORT
-#endif
-
 #ifndef ANT_TEST_UE5_LIB_H
 #define ANT_TEST_UE5_LIB_H
+
+#include <functional>
 
 #if defined(__cplusplus)
 extern "C" {
 #endif // defined C++
 
-int startupAntPlusLib(void);
+/*
+ * Library functions in the order they should be used
+ */
 
-int addDeviceID(unsigned short devID);
+int ue5_lib__startupAntPlusLib(void);
 
-int endAntPlusLib(void);
+int ue5_lib__addDeviceID(unsigned short usDeviceNum,
+                unsigned char ucDeviceType,
+                unsigned short usMessagePeriod,
+                std::function<void(unsigned char *p_aucData)> callback);
 
-unsigned short getPower(void);
+int ue5_lib__startANT(void);
 
-int getIntPlusPlus(int lastInt);
+int ue5_lib__endAntPlusLib(void);
 
 #if defined(__cplusplus)
 }
