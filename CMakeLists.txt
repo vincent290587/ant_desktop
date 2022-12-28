@@ -46,6 +46,7 @@ target_link_libraries (${PROJECT_NAME}_DLL LINK_PUBLIC ANT_LIB)
 #        XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "Hex_Identity_ID_Goes_Here"
 #        )
 
+# TODO install to different folders on Mac / Linux
 install(TARGETS ${PROJECT_NAME}_DLL ANT_LIB
         #        CONFIGURATIONS Release
         DESTINATION ${CMAKE_INSTALL_BINDIR}/Source/ThirdParty/AntPlusPluginLibrary/x64
