@@ -4,7 +4,8 @@
 ## Using in UE-5
 
 - Needs to be compiled with Visual Studio toolchain x64
-- Needs to be a Release
+- Needs to be a Release build
+- Install will place the compiled libraries in the right folder
 
 ## Unused commands I want to keep
 

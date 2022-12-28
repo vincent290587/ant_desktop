@@ -38,6 +38,10 @@ public class AntPlusPlugin : ModuleRules
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
+				"CoreUObject",
+				"Engine",
+				"Slate",
+				"SlateCore",
 				"AntPlusPluginLibrary",
 				// ... add private dependencies that you statically link with here ...	
 			}
