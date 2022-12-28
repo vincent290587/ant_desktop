@@ -8,8 +8,12 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS				ON)
 set(CMAKE_INSTALL_PREFIX         "${CMAKE_SOURCE_DIR}/exe")
 set(CMAKE_INSTALL_BINDIR         "${CMAKE_SOURCE_DIR}/AntPlusPlugin")
 
-#add_compile_options(-O0 -ggdb)
-#add_compile_options(-Werror -Wno-attributes -Wenum-compare -Wno-deprecated-declarations)
+if(NOT MSVC)
+    add_compile_options(-O0)
+    add_compile_options(-Werror -Wno-attributes -Wenum-compare -Wno-deprecated-declarations)
+else()
+    message("Using MSVC compiler")
+endif()
 
 include_directories(
         ./
