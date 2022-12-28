@@ -20,7 +20,7 @@ Then simply copy the `AntPlusPlugin` folder to your project's plugin folder.
 Initiate
 
 ```bash
-cmake -S . -G Ninja -B cmake-build-release
+cmake -DCMAKE_BUILD_TYPE=Release -S . -G Ninja -B cmake-build-release
 ```
 
 Build
