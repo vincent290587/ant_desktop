@@ -21,15 +21,6 @@ void FAntPlusPluginModule::ShutdownModule()
     endAntPlusLib();
 }
 
-unsigned short FAntPlusPluginModule::getRawPower(void) {
-    return getPower();
-}
-
-int FAntPlusPluginModule::connectDeviceID(unsigned short devID) {
-
-    return addDeviceID(devID);
-}
-
 #undef LOCTEXT_NAMESPACE
 
 IMPLEMENT_MODULE(FAntPlusPluginModule, AntPlusPlugin)

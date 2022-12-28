@@ -29,7 +29,10 @@ class UAntPlusPluginBPLibrary : public UBlueprintFunctionLibrary
 {
     GENERATED_UCLASS_BODY()
 
-    UFUNCTION(BlueprintCallable, meta = (DisplayName = "Execute Sample function", Keywords = "AntPlusPlugin testing"), Category = "AntPlusPlugin")
-    static float AntPlusPluginSampleFunction(float Param);
+    UFUNCTION(BlueprintCallable, meta = (DisplayName = "Connect to a certain power meter", Keywords = "AntPlusPlugin testing"), Category = "AntPlusPlugin")
+    static int connectDeviceID(int devID);
+
+    UFUNCTION(BlueprintCallable, meta = (DisplayName = "Get the raw power in W", Keywords = "AntPlusPlugin testing"), Category = "AntPlusPlugin")
+    static int getRawPower();
 };
 

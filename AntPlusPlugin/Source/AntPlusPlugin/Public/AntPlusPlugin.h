@@ -12,9 +12,6 @@ public:
     virtual void StartupModule() override;
     virtual void ShutdownModule() override;
 
-    int connectDeviceID(unsigned short devID);
-    unsigned short getRawPower(void);
-
 private:
 
 };

@@ -1,5 +1,6 @@
 #include "AntPlusPluginBPLibrary.h"
 #include "AntPlusPlugin.h"
+#include "AntPlusPluginLibrary/ue5_lib.h"
 
 UAntPlusPluginBPLibrary::UAntPlusPluginBPLibrary(const FObjectInitializer& ObjectInitializer)
         : Super(ObjectInitializer)
@@ -7,8 +8,13 @@ UAntPlusPluginBPLibrary::UAntPlusPluginBPLibrary(const FObjectInitializer& Objec
 
 }
 
-float UAntPlusPluginBPLibrary::AntPlusPluginSampleFunction(float Param)
+int UAntPlusPluginBPLibrary::connectDeviceID(int devID)
 {
-    return -1;
+    return addDeviceID(devID);
+}
+
+int UAntPlusPluginBPLibrary::getRawPower(void)
+{
+    return getPower();
 }
 
