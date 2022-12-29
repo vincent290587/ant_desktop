@@ -33,12 +33,6 @@ int ue5_lib__startupAntPlusLib(void) {
 
     m_current_channel = 0u;
 
-#if defined _WIN32 || defined _WIN64
-    MessageBox(NULL, TEXT("Started!"), TEXT("AntPlus Plugin"), MB_OK);
-#else
-    printf("Loaded ExampleLibrary from Third Party Plugin sample");
-#endif
-
     return 0;
 }
 
