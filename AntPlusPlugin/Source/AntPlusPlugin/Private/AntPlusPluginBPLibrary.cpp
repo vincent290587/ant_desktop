@@ -51,3 +51,8 @@ int UAntPlusPluginBPLibrary::getRawPower(void)
     return power1;
 }
 
+int UAntPlusPluginBPLibrary::sendBytes(void)
+{
+    return power1;
+}
+
