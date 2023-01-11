@@ -36,7 +36,13 @@ class UAntPlusPluginBPLibrary : public UBlueprintFunctionLibrary
     static int getRawPower();
 
     UFUNCTION(BlueprintCallable, meta = (DisplayName = "Send bytes to the ANT+ channel", Keywords = "AntPlusPlugin bytes send"), Category = "AntPlusPlugin")
-    static void sendBytes();
+    static void sendBytes(int page, int byte1, int byte2, int byte3, int byte4, int byte5, int byte6, int byte7);
+
+    UFUNCTION(BlueprintCallable, meta = (DisplayName = "Set the FEC trainer target power", Keywords = "AntPlusPlugin FEC target power"), Category = "AntPlusPlugin")
+    static void setFECPage49(float targetPower);
+
+    UFUNCTION(BlueprintCallable, meta = (DisplayName = "Set the FEC trainer target slope", Keywords = "AntPlusPlugin FEC target slope"), Category = "AntPlusPlugin")
+    static void setFECPage51(float targetSlope, float targetResistance);
 
 };
 

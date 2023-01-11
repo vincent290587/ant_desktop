@@ -22,6 +22,8 @@ int ue5_lib__addDeviceID(unsigned short usDeviceNum,
                 unsigned short usMessagePeriod,
                 std::function<void(unsigned char *p_aucData)> callback);
 
+int ue5_lib__sendBytes(unsigned char ucChannel, unsigned char *p_aucData);
+
 int ue5_lib__startANT(void);
 
 int ue5_lib__endAntPlusLib(void);

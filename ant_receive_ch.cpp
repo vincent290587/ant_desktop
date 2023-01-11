@@ -184,9 +184,14 @@ DSI_THREAD_RETURN ANTrxService::RunMessageThread(void *pvParameter_)
 	return NULL;
 }
 
-void ANTrxService::TransmitMessage(UCHAR tx_buffer[ANT_STANDARD_DATA_PAYLOAD_SIZE])
+void ANTrxService::TransmitMessage(UCHAR channel, UCHAR tx_buffer[ANT_STANDARD_DATA_PAYLOAD_SIZE])
 {
+    if (bTXwaiting) {
+        return;
+    }
+    txChannel = channel;
     memcpy(aucTransmitBuffer, tx_buffer, ANT_STANDARD_DATA_PAYLOAD_SIZE);
+    bTXwaiting = true;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -223,8 +228,8 @@ void ANTrxService::MessageThread()
 			}
 
             if (bTXwaiting) {
+                pclMessageObject->SendBroadcastData(txChannel, aucTransmitBuffer); // SendAcknowledgedData
                 bTXwaiting = false;
-                pclMessageObject->SendBroadcastData(USER_ANTCHANNEL, aucTransmitBuffer);
                 //printf("SendBroadcastData %u \n", aucTransmitBuffer[0]);
             }
 		}

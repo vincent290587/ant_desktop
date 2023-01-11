@@ -74,7 +74,7 @@ public:
 		mDevices.push_back(ANTdevice(sInit, callback));
 	}
 
-    void TransmitMessage(UCHAR aucTransmitBuffer[ANT_STANDARD_DATA_PAYLOAD_SIZE]);
+    void TransmitMessage(UCHAR channel, UCHAR aucTransmitBuffer[ANT_STANDARD_DATA_PAYLOAD_SIZE]);
 
 	void Start();
 	void Close();
@@ -105,6 +105,7 @@ private:
 //	USHORT usMessagePeriod;
 
     BOOL bTXwaiting;
+    UCHAR txChannel;
     UCHAR aucTransmitBuffer[ANT_STANDARD_DATA_PAYLOAD_SIZE];
 
 	BOOL bBursting; // Holds whether the bursting phase of the test has started

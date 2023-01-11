@@ -3,7 +3,9 @@
 #include <fstream>
 #include "dsi_serial_generic.hpp"
 #include "ant_receive_ch.h"
+#include "ue5_lib.h"
 
+int fec_device_channel = -1;
 USHORT power1, power2;
 
 static void _pw1_callback(UCHAR *p_aucData) {
@@ -12,15 +14,16 @@ static void _pw1_callback(UCHAR *p_aucData) {
 
 	//printf("Dev 0 Page: %d received\n", ucPageNum);
 
+    printf("Receiving FEC page %u \n", ucPageNum);
+
 	// Page specific data
 	switch(ucPageNum) // Removing the toggle bit
 	{
-		case 16:
-		{
-			power1 = p_aucData[6] + p_aucData[7]*0xFF;
-			printf("Dev 0 Page: power %u received\n", power1);
-		}
-			break;
+        case 25:
+        {
+            power1 = p_aucData[5] + ((p_aucData[6] & 0b00001111) << 8u);
+            printf("FEC power %u received\n", power1);
+        } break;
 
 		default:
 
@@ -55,7 +58,7 @@ static void _pw2_callback(UCHAR *p_aucData) {
 #define PW_PERIOD_COUNTS 8182u
 #define PW_DEVICE_TYPE   0x0Bu
 
-static void Loop(ANTrxService *const pANTsrv);
+static void Loop(void);
 
 BOOL bMyDone = FALSE;
 
@@ -83,46 +86,89 @@ DSI_THREAD_RETURN _io_task(void *pvParameter_)
 	return NULL;
 }
 
+#define ANT_FEC_PAGE49_TARGET_POWER_LSB     (0.25f)
+
+#define ANT_FEC_PAGE51_SLOPE_LSB       (1.f/100.f)
+#define ANT_FEC_PAGE51_ROLL_RES_LSB    (5.f/100000.f)
+
+DSI_THREAD_RETURN _tx_task(void *pvParameter_)
+{
+    UCHAR aucTransmitBuffer[ANT_STANDARD_DATA_PAYLOAD_SIZE];
+
+#if !defined( USE_SLOPE )
+    while (!bMyDone) {
+
+        DSIThread_Sleep(1000);
+
+        float power = 199; // 5%
+        uint16_t usPower = (uint16_t)(power / ANT_FEC_PAGE49_TARGET_POWER_LSB);
+
+        aucTransmitBuffer[MESSAGE_BUFFER_DATA1_INDEX] = 49u; // page
+        aucTransmitBuffer[MESSAGE_BUFFER_DATA7_INDEX] = usPower & 0xFF; // power part 2
+        aucTransmitBuffer[MESSAGE_BUFFER_DATA8_INDEX] = (usPower & 0xFF00) >> 8; // power part 1
+
+        ue5_lib__sendBytes(fec_device_channel, aucTransmitBuffer);
+
+        printf("Transmitting on channel %d ... \n", fec_device_channel);
+
+    }
+#else
+    while (!bMyDone) {
+
+        DSIThread_Sleep(1000);
+
+        float slope = 5.f; // 5%
+        uint16_t usSlope = (uint16_t)(slope / ANT_FEC_PAGE51_SLOPE_LSB);
+        float roll_res = 0.005f; // 0.005
+        uint8_t usroll_res = (uint16_t)(roll_res / ANT_FEC_PAGE51_ROLL_RES_LSB);
+
+        aucTransmitBuffer[MESSAGE_BUFFER_DATA1_INDEX] = 51u; // page
+        aucTransmitBuffer[MESSAGE_BUFFER_DATA6_INDEX] = usSlope & 0xFF; // slope part 1 (LSB is 0.5 W)
+        aucTransmitBuffer[MESSAGE_BUFFER_DATA7_INDEX] = (usSlope & 0xFF00) >> 8; // slope part 2
+        aucTransmitBuffer[MESSAGE_BUFFER_DATA8_INDEX] = usroll_res; // rolling res
+
+        ue5_lib__sendBytes(fec_device_channel, aucTransmitBuffer);
+
+        printf("Transmitting on channel %d ... \n", fec_device_channel);
+
+    }
+#endif
+
+    return NULL;
+}
+
+#define FEC_DEVICE_TYPE            0x11u               ///< Device type reserved for ANT+ Bicycle Power.
+#define FEC_ANTPLUS_RF_FREQ        0x39u               ///< Frequency, decimal 57 (2457 MHz).
+#define FEC_MSG_PERIOD             8192u               ///< Message period, decimal 8182 (4 Hz).
+
 int main(int argc, char *argv[]) {
 
-	ANTrxService *pANTsrv = new ANTrxService();
-	assert(pANTsrv);
+    ue5_lib__startupAntPlusLib();
 
-    sANTrxServiceInit sInit1;
-    sInit1.ucAntChannel = 0;
-    sInit1.ucTransType = 0;
-    sInit1.ucDeviceType = PW_DEVICE_TYPE;
-    sInit1.usDeviceNum = 15568u;
-    sInit1.usMessagePeriod = PW_PERIOD_COUNTS;
+    fec_device_channel = ue5_lib__addDeviceID(15568u,
+                         FEC_DEVICE_TYPE,
+                         FEC_MSG_PERIOD,
+                         _pw1_callback);
+    assert(fec_device_channel >= 0);
 
-	sANTrxServiceInit sInit2;
-    sInit2.ucAntChannel = 0;
-    sInit2.ucTransType = 0;
-    sInit2.ucDeviceType = PW_DEVICE_TYPE;
-    sInit2.usDeviceNum = 0xEFAC;
-    sInit2.usMessagePeriod = PW_PERIOD_COUNTS;
+    (void)ue5_lib__addDeviceID(0xEFAC,
+                         PW_DEVICE_TYPE,
+                         PW_PERIOD_COUNTS,
+                         _pw2_callback);
 
-	int ret = 0;
+    DSI_THREAD_ID uiDSIThread;
+    // Create message thread.
+    uiDSIThread = DSIThread_CreateThread(_io_task, 0);
+    assert(uiDSIThread);
 
-	pANTsrv->AddSlave(sInit1, _pw1_callback);
-	pANTsrv->AddSlave(sInit2, _pw2_callback);
+//    uiDSIThread = DSIThread_CreateThread(_tx_task, 0);
+//    assert(uiDSIThread);
 
-	// Create message thread.
-	DSI_THREAD_ID uiDSIThread = DSIThread_CreateThread(_io_task, NULL);
-	assert(uiDSIThread);
+    ue5_lib__startANT();
 
-	if( pANTsrv->Init() ) {
+    Loop();
 
-		pANTsrv->Start();
-
-		Loop(pANTsrv);
-
-	} else {
-		delete pANTsrv;
-		ret--;
-	}
-
-	return ret;
+	return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -131,7 +177,7 @@ int main(int argc, char *argv[]) {
 // Start the Test program.
 //
 ////////////////////////////////////////////////////////////////////////////////
-static void Loop(ANTrxService *const pANTsrv)
+static void Loop(void)
 {
 	printf("Initialisation was successful!\n"); fflush(stdout);
 
@@ -156,14 +202,6 @@ static void Loop(ANTrxService *const pANTsrv)
 				// Quit
 				printf("Closing channels...\n");
 				bMyDone = TRUE;
-				break;
-			}
-
-			case 'u':
-			case 'U':
-			{
-				// Print out information about the device we are connected to
-				pANTsrv->PrintUsbDescr();
 				break;
 			}
 

@@ -48,13 +48,20 @@ int ue5_lib__addDeviceID(unsigned short usDeviceNum,
     VERIFY(pANTsrv, -1);
 
     sANTrxServiceInit sInit1;
-    sInit1.ucAntChannel = m_current_channel++;
+    sInit1.ucAntChannel = m_current_channel;
     sInit1.ucTransType = 0;
     sInit1.ucDeviceType = ucDeviceType;
     sInit1.usDeviceNum = usDeviceNum;
     sInit1.usMessagePeriod = usMessagePeriod;
 
     pANTsrv->AddSlave(sInit1, callback);
+
+    return m_current_channel++;
+}
+
+int ue5_lib__sendBytes(unsigned char ucChannel, unsigned char *p_aucData) {
+
+    pANTsrv->TransmitMessage(ucChannel, p_aucData); // only channel 0 supported so far
 
     return 0;
 }
