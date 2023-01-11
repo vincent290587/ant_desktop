@@ -48,10 +48,13 @@ UAntPlusPluginBPLibrary::UAntPlusPluginBPLibrary(const FObjectInitializer& Objec
 
 int UAntPlusPluginBPLibrary::connectPowerMeterDeviceID(int devID)
 {
-    return ue5_lib__addDeviceID(devID,
+    ue5_lib__addDeviceID(devID,
                                 FEC_DEVICE_TYPE,
                                 FEC_MSG_PERIOD,
                                 _pw1_callback);
+
+
+    return ue5_lib__startANT();
 }
 
 int UAntPlusPluginBPLibrary::getRawPower(void)
@@ -85,9 +88,7 @@ void UAntPlusPluginBPLibrary::sendBytes(int page, int byte1, int byte2, int byte
     aucData[6] = (unsigned char)byte6;
     aucData[7] = (unsigned char)byte7;
 
-    ue5_lib__sendBytes(aucData);
-
-    return 0;
+    ue5_lib__sendBytes(0, aucData);
 }
 
 #define ANT_FEC_PAGE49_TARGET_POWER_LSB     (0.25f)
