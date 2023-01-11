@@ -61,6 +61,8 @@ int ue5_lib__addDeviceID(unsigned short usDeviceNum,
 
 int ue5_lib__sendBytes(unsigned char ucChannel, unsigned char *p_aucData) {
 
+    VERIFY(pANTsrv, -1);
+
     pANTsrv->TransmitMessage(ucChannel, p_aucData); // only channel 0 supported so far
 
     return 0;
