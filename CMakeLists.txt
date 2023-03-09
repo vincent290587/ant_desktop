@@ -8,6 +8,12 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS				ON)
 set(CMAKE_INSTALL_PREFIX         "${CMAKE_SOURCE_DIR}/exe")
 set(CMAKE_INSTALL_BINDIR         "${CMAKE_SOURCE_DIR}/AntPlusPlugin")
 
+if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+    message(STATUS "Building without debug info")
+else ()
+    message(FATAL_ERROR "Wrong build type")
+endif ()
+
 if(NOT MSVC)
     add_compile_options(-O0)
     add_compile_options(-Werror -Wno-attributes -Wenum-compare -Wno-deprecated-declarations)

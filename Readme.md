@@ -24,6 +24,9 @@ Important points for UE compatibility:
 if you don't have / know CMake, you'll need a fresh installation of it:
 <https://cmake.org/download/>
 
+As well as ninja:
+<https://ninja-build.org/>
+
 - Run the CMake initiate command (see section below)
 - Run the CMake build command
 - Run the CMake install command 
@@ -64,7 +67,13 @@ In your code you can then call the second block to read the last received power 
 Initiate CMake build
 
 ```bash
-cmake -DCMAKE_BUILD_TYPE=Release -S . -B cmake-build-release -G "Visual Studio 16 2019" -A x64
+cmake -DCMAKE_BUILD_TYPE=Release -S . -B cmake-build-release -G "Visual Studio 16 2019" -A x64 -G Ninja
+```
+
+or 
+
+```bash
+cmake -DCMAKE_BUILD_TYPE=Release -S . -B cmake-build-release -G "Visual Studio 16 2019" -A x64 -G "MinGW Makefiles"
 ```
 
 Build
