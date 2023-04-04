@@ -67,13 +67,7 @@ In your code you can then call the second block to read the last received power 
 Initiate CMake build
 
 ```bash
-cmake -DCMAKE_BUILD_TYPE=Release -S . -B cmake-build-release -G "Visual Studio 16 2019" -A x64 -G Ninja
-```
-
-or 
-
-```bash
-cmake -DCMAKE_BUILD_TYPE=Release -S . -B cmake-build-release -G "Visual Studio 16 2019" -A x64 -G "MinGW Makefiles"
+cmake -DCMAKE_BUILD_TYPE=Release -S . -B cmake-build-release -G "Visual Studio 16 2019" -A x64
 ```
 
 Build
